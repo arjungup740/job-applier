@@ -74,17 +74,23 @@ fields = {
     "Email✱": "johndoe@example.com",
     "Phone ✱": "123-456-7890",
     # "Current location ✱": "New York, NY",
-    # "Current company": "Example Company",
-    # "LinkedIn URL": "https://linkedin.com/in/example",
-    # "Twitter URL": "https://twitter.com/example",
-    # "GitHub URL": "https://github.com/example",
-    # "Portfolio URL": "https://example.com",
-    # "Other website": "https://example-other.com",
-    # "Do you live in the NYC Area?✱": "Yes",  # Radio button
-    # "If not, are you willing to relocate?✱": "Yes",  # Radio button
-    # "What are your pronouns?": "He/Him",
+    "Current company": "Example Company",
+    "LinkedIn URL": "https://linkedin.com/in/example",
+    "Twitter URL": "https://twitter.com/example",
+    "GitHub URL": "https://github.com/example",
+    "Portfolio URL": "https://example.com",
+    "Other website": "https://example-other.com",
+    "Do you live in the NYC Area?✱": "Yes",  # Radio button
+    "If not, are you willing to relocate?✱": "Yes",  # Radio button
+    "What are your pronouns?": "He/Him",
+    'Do you now or will you in the future require sponsorship for employment authorization to work in the US? (If so, Please let us know more information if you can.)✱': "No",
     # "What is your desired compensation for this role?": "$100,000",
 }
+
+required_fields = []
+for field_label, field_data in web_elem_dict_of_questions.items():
+    if '✱' in field_label:
+        required_fields.append(field_label)
 
 for field_label, field_data in web_elem_dict_of_questions.items():
     if field_label in fields:  # fields is your dictionary of dummy data
@@ -109,7 +115,7 @@ for field_label, field_data in web_elem_dict_of_questions.items():
                     file_path = os.path.abspath(dummy_value)
                     input_elem.send_keys(file_path)
                     if field_label == 'Resume/CV ✱':
-                        max_wait = 15
+                        max_wait = 30
                         print(f"waiting for resume to upload, max time is {max_wait} seconds")
                         # Wait for "Success!" text in the resume-upload-label
                         WebDriverWait(driver, max_wait).until(

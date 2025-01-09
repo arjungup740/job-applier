@@ -5,35 +5,21 @@
 
 ## to do now
 
-add a pause for the resume to upload, maybe 15 seconds
-add logic that checks if field is already filled in, if so skip
+
+see if can handle location dropdowns
+the citizenship textarea field
 checkboxes
-the application-question custom questions didn't work
-perhaps have logic that doesn't fill in non-required questions
-let resume autofill work and have program check if field is already filled in
-fill in fields of hinge app, then see how it does on another one
+logic that doesn't fill in non-required questions -- certainly not demographic ones
+make it so that it doesn't kill the window after it finishes filling in
+
+
+
 
 ## couple of avenues:
 
-pull all questions, have an llm interpret them and generate the answer json, then have the program go back and fill stuff in
-have an llm take the questions, generate the answers in json, then have a second llm take the json and the html and generate the code to fill in the fields
-
-collect the full html blob from the application form page, tell it to extract the fields that we need to send input to
-
-grab the application form, use the selenium thing to get all the possible elements, then have a second set of logic that goes through and thinks which elements are relevant, then of those grab the correct fields and their values to send things to
-
-could generate all the html for each question, pass that to gpt, have it generate the code to fill in fields, then run that code
-
+ultimately could grab the question elements and html, pass to llm to parse the questions and generate an answer dict, then pass that answer dict to the program that goes and fills in the fields
 
 ## reference
-
-By.XPATH, f"//div[contains(@class, 'application-label') and contains(text(), '{field_label.split('✱')[0].strip()}')]"
-
-types:
-
-- text
-- radio
-- upload something -- linkedin button, resume
 
 
 https://jobs.lever.co/matchgroup/354cd021-8ea8-45e9-9dea-d1f6a5a0728f/apply # lever
@@ -48,6 +34,8 @@ could ask to find a way that given an application-question with a corresponding 
 can fill in text fields, after specifying the fiels very specifically to fill in
 Just get a dict that has application label, application field, field type. That's it
 go through and grab all the application question classes
+
+there's conceptual and there's mechanics
 
 #### Return
 
