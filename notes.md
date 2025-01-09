@@ -5,7 +5,8 @@
 
 ## to do now
 
-try the resume
+add a pause for the resume to upload, maybe 15 seconds
+add logic that checks if field is already filled in, if so skip
 checkboxes
 the application-question custom questions didn't work
 perhaps have logic that doesn't fill in non-required questions

@@ -26,7 +26,34 @@ application_form = wait.until(EC.presence_of_element_located((By.ID, "applicatio
 # Extract all application questions
 application_questions = application_form.find_elements(By.CSS_SELECTOR, "[class*='application-question']")
 
-# Parse questions using BeautifulSoup
+class FormField:
+    def __init__(self, question_element):
+        self.question_element = question_element
+        
+    def get_field_container(self):
+        return self.question_element.find_element(By.CSS_SELECTOR, "[class*='application-field']")
+        
+    def get_input_elements(self):
+        return self.get_field_container().find_elements(By.TAG_NAME, 'input')
+        
+    def get_input_types(self):
+        return [elem.get_attribute('type') for elem in self.get_input_elements()]
+        
+    def is_filled(self):
+        input_elements = self.get_input_elements()
+        for input_elem in input_elements:
+            input_type = input_elem.get_attribute('type')
+            if input_type == 'radio':
+                if input_elem.is_selected():
+                    return True
+            elif input_type == 'file':
+                if input_elem.get_attribute('value'):
+                    return True
+            else:  # text, email, tel, url
+                if input_elem.get_attribute('value').strip():
+                    return True
+        return False
+
 # Modified dictionary creation
 web_elem_dict_of_questions = {}
 for question in application_questions:
@@ -34,20 +61,12 @@ for question in application_questions:
     soup = BeautifulSoup(question_html, 'html.parser')
     application_label = soup.find('div', class_=lambda x: x and 'application-label' in x)
     if application_label:
-        # Get the actual WebElement for the field instead of BeautifulSoup object
-        field_container = question.find_element(By.CSS_SELECTOR, "[class*='application-field']")
-        input_elements = field_container.find_elements(By.TAG_NAME, 'input')
-        
-        web_elem_dict_of_questions[application_label.text.strip()] = {
-            "field_container": field_container,
-            "input_elements": input_elements,
-            "input_types": [elem.get_attribute('type') for elem in input_elements]
-        }
+        web_elem_dict_of_questions[application_label.text.strip()] = FormField(question)
 
 # web_elem_dict_of_questions['Full name✱']['input_elements']#[0].get_attribute('outerHTML') # sample
 
 for field_label, field_data in web_elem_dict_of_questions.items():
-    print(field_label, field_data['input_types'])
+    print(field_label, field_data.get_input_types())
 
 fields = {
     'Resume/CV ✱': 'Resume_AGupta_2024.pdf',
@@ -71,9 +90,11 @@ for field_label, field_data in web_elem_dict_of_questions.items():
     if field_label in fields:  # fields is your dictionary of dummy data
         try:
             dummy_value = fields[field_label]
-            input_elements = field_data['input_elements']
-            field_container = field_data['field_container']
-            
+            input_elements = field_data.get_input_elements()
+            field_container = field_data.get_field_container()
+            if field_data.is_filled():
+                print(f"Skipping {field_label} because it is already filled")
+                continue
             # Scroll the field container into view
             driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", field_container)
             
@@ -87,11 +108,26 @@ for field_label, field_data in web_elem_dict_of_questions.items():
                     # Convert relative path to absolute path if needed
                     file_path = os.path.abspath(dummy_value)
                     input_elem.send_keys(file_path)
+                    if field_label == 'Resume/CV ✱':
+                        max_wait = 15
+                        print(f"waiting for resume to upload, max time is {max_wait} seconds")
+                        # Wait for "Success!" text in the resume-upload-label
+                        WebDriverWait(driver, max_wait).until(
+                            lambda x: x.find_element(By.CSS_SELECTOR, '.resume-upload-label').text == "Success!"
+                        )
                 elif input_type in ["text", "email", "tel", "url"]:
                     if isinstance(dummy_value, str):
                         input_elem.send_keys(dummy_value)
                         
             # Add a small delay after scrolling and interacting
+            time.sleep(random.uniform(0.5, 1))
+            
+            # Check if field was successfully filled
+            if field_data.is_filled():
+                print(f"Successfully filled {field_label}")
+            else:
+                print(f"Failed to fill {field_label}")
+                
             time.sleep(random.uniform(0.5, 1))
             
         except Exception as e:
