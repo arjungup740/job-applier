@@ -7,6 +7,7 @@ from selenium.webdriver.common.action_chains import ActionChains
 from bs4 import BeautifulSoup
 import time
 import random
+import os
 
 # Initialize WebDriver with custom User-Agent
 options = webdriver.ChromeOptions()
@@ -45,21 +46,25 @@ for question in application_questions:
 
 # web_elem_dict_of_questions['Full name✱']['input_elements']#[0].get_attribute('outerHTML') # sample
 
+for field_label, field_data in web_elem_dict_of_questions.items():
+    print(field_label, field_data['input_types'])
+
 fields = {
+    'Resume/CV ✱': 'Resume_AGupta_2024.pdf',
     "Full name✱": "John Doe",
     "Email✱": "johndoe@example.com",
     "Phone ✱": "123-456-7890",
     # "Current location ✱": "New York, NY",
-    "Current company": "Example Company",
-    "LinkedIn URL": "https://linkedin.com/in/example",
-    "Twitter URL": "https://twitter.com/example",
-    "GitHub URL": "https://github.com/example",
-    "Portfolio URL": "https://example.com",
-    "Other website": "https://example-other.com",
-    "Do you live in the NYC Area?✱": "Yes",  # Radio button
-    "If not, are you willing to relocate?✱": "Yes",  # Radio button
-    "What are your pronouns?": "He/Him",
-    "What is your desired compensation for this role?": "$100,000",
+    # "Current company": "Example Company",
+    # "LinkedIn URL": "https://linkedin.com/in/example",
+    # "Twitter URL": "https://twitter.com/example",
+    # "GitHub URL": "https://github.com/example",
+    # "Portfolio URL": "https://example.com",
+    # "Other website": "https://example-other.com",
+    # "Do you live in the NYC Area?✱": "Yes",  # Radio button
+    # "If not, are you willing to relocate?✱": "Yes",  # Radio button
+    # "What are your pronouns?": "He/Him",
+    # "What is your desired compensation for this role?": "$100,000",
 }
 
 for field_label, field_data in web_elem_dict_of_questions.items():
@@ -78,6 +83,10 @@ for field_label, field_data in web_elem_dict_of_questions.items():
                 if input_type == "radio":
                     if dummy_value in ["Yes", "No"] and input_elem.get_attribute("value") == dummy_value:
                         input_elem.click()
+                elif input_type == "file":
+                    # Convert relative path to absolute path if needed
+                    file_path = os.path.abspath(dummy_value)
+                    input_elem.send_keys(file_path)
                 elif input_type in ["text", "email", "tel", "url"]:
                     if isinstance(dummy_value, str):
                         input_elem.send_keys(dummy_value)
