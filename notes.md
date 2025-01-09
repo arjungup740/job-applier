@@ -2,7 +2,10 @@
 
 ## the lab
 
-Do we need the label element? Or just the field to fill it out? we don't need to find the label element to fill it out necessarily.. just the field element
+What do you want to do? simply take the application label, pull corresponding answer from our dict, then fill in field
+if we're parsing the soup we're just looking at the text of the html, if we want to interact with the page we need the wait construct presumably
+
+we're actually already interacting with the question objects, we just need to send the right types of inputs 
 
 ## to do now
 

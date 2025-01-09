@@ -1,3 +1,72 @@
+htmldict_of_questions = {}
+for question in application_questions:
+    question_html = question.get_attribute('outerHTML')
+    soup = BeautifulSoup(question_html, 'html.parser')
+    application_label = soup.find('div', class_='application-label')
+    application_field = soup.find('div', class_='application-field')
+    if application_label:
+        dict_of_questions[application_label.text.strip()] = {
+            "application_field": application_field,
+            "input_types": [input_tag.get('type') for input_tag in application_field.find_all('input')] if application_field else []
+        }
+
+for application_label, application_field_html in dict_of_questions.items():
+    application_field = application_field_html
+    soup = BeautifulSoup(question_html, 'html.parser')
+    application_label = soup.find('div', class_='application-label')
+    if application_label.text.strip() in fields.keys():
+        application_field = soup.find('div', class_='application-field')
+        input_elements = application_field.find_elements(By.XPATH, ".//input")
+
+
+# Loop through fields and interact with them
+for field_label, dummy_value in fields.items():
+    print(f'current field_label: {field_label}')
+    try:
+        try: # see if better way to do this
+            # logic for simple structure
+            label_element = wait.until(EC.presence_of_element_located((
+                By.XPATH, f"//div[contains(@class, 'application-label') and contains(text(), '{field_label.split('✱')[0].strip()}')]"
+            )))
+        except:
+            # next try looking for nested div.text structure
+            label_element = wait.until(EC.presence_of_element_located((
+                By.XPATH, f"//div[contains(@class, 'application-label')]//div[@class='text'][contains(text(), '{field_label.split('✱')[0].strip()}')]/.."
+            )))
+        
+        if label_element:
+            print('got here')
+        # Rest of the code inside try block should be at this indentation level
+        driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", label_element)
+        field_container = label_element.find_element(By.XPATH, "../div[@class='application-field']")
+        input_elements = field_container.find_elements(By.XPATH, ".//input")
+        print(f'len(input_elements): {len(input_elements)}')
+        for input_element in input_elements:
+            input_type = input_element.get_attribute("type")
+            print(input_type)
+            if input_type == "radio":
+                print('got here 1')
+                if dummy_value in ["Yes", "No"] and input_element.get_attribute("value") == dummy_value:
+                    print('got here 2')
+                    input_element.click()
+            elif input_type == "checkbox":
+                if isinstance(dummy_value, list) and input_element.get_attribute("value") in dummy_value:
+                    input_element.click()
+            elif input_type == "file":
+                input_element.send_keys(dummy_value)
+            elif input_type in ["text", "email", "tel", "url"]:
+                if isinstance(dummy_value, str):
+                    input_element.send_keys(dummy_value)
+            else:
+                print(f"Unhandled input type '{input_type}' for field '{field_label}'")
+        
+        print(f"Processed field: {field_label}")
+        time.sleep(random.uniform(1, 2))  # Random delay between processing fields
+    except Exception as e:
+        print(f"Error processing field '{field_label}': {e}")
+
+# O
+
 fields = {
     "resume": "Resume_AGupta_2024.pdf",  # /Users/arjungupta/Documents/projects/job_applier/ # Update with your file path
     "name": "John Doe",
