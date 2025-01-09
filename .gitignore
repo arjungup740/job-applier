@@ -1,3 +1,4 @@
 *.pdf
 myenv/
 *.pyc
+.vscode/

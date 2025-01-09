@@ -2,9 +2,10 @@
 
 ## the lab
 
+Do we need the label element? Or just the field to fill it out? we don't need to find the label element to fill it out necessarily.. just the field element
+
 ## to do now
 
-hitting captchas -- on choosing the location with the location being a dropdown -- forget for now,
 can't handle radio buttons or checkboxes
 the application-question custom questions didn't work
 
@@ -17,6 +18,8 @@ grab the application form, use the selenium thing to get all the possible elemen
 could generate all the html for each question, pass that to gpt, have it generate the code to fill in fields, then run that code
 
 ## reference
+
+By.XPATH, f"//div[contains(@class, 'application-label') and contains(text(), '{field_label.split('✱')[0].strip()}')]"
 
 types:
 
@@ -34,3 +37,7 @@ could ask to find a way that given an application-question with a corresponding 
 can fill in text fields, after specifying the fiels very specifically to fill in
 Just get a dict that has application label, application field, field type. That's it
 go through and grab all the application question classes
+
+#### Return
+
+hitting captchas -- on choosing the location with the location being a dropdown -- return to
