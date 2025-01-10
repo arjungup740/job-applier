@@ -12,7 +12,9 @@ import os
 # Initialize WebDriver with custom User-Agent
 options = webdriver.ChromeOptions()
 options.add_argument("user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.6778.205 Safari/537.36")
+options.add_experimental_option("detach", True)
 driver = webdriver.Chrome(options=options)
+
 
 # Open the URL
 driver.get('https://jobs.lever.co/matchgroup/354cd021-8ea8-45e9-9dea-d1f6a5a0728f/apply')
@@ -79,29 +81,28 @@ web_elem_dict_of_questions['Do you now or will you in the future require sponsor
 # for field_label, field_data in web_elem_dict_of_questions.items():
 #     print(field_label, field_data.get_input_types())
 
-fields = {
-    # 'Resume/CV ✱': 'Resume_AGupta_2024.pdf',
-    # "Full name✱": "John Doe",
-    # "Email✱": "johndoe@example.com",
-    # "Phone ✱": "123-456-7890",
-    # "Current location ✱": "New York, NY",
-    # "Current company": "Example Company",
-    # "LinkedIn URL": "https://linkedin.com/in/example",
-    # "Twitter URL": "https://twitter.com/example",
-    # "GitHub URL": "https://github.com/example",
-    # "Portfolio URL": "https://example.com",
-    "Other website": "https://example-other.com",
-    "Do you live in the NYC Area?✱": "Yes",  # Radio button
-    # "If not, are you willing to relocate?✱": "Yes",  # Radio button
-    # "What are your pronouns?": "He/Him",
-    'Do you now or will you in the future require sponsorship for employment authorization to work in the US? (If so, Please let us know more information if you can.)✱': "No",
-    # "What is your desired compensation for this role?": "$100,000",
-}
-
 required_fields = []
 for field_label, field_data in web_elem_dict_of_questions.items():
     if '✱' in field_label:
         required_fields.append(field_label)
+
+
+fields = {
+    # 'Resume/CV ✱': 'Resume_AGupta_2024.pdf',
+    # "Full name✱": "Arjun Gupta",
+    # "Email✱": "arjungup740@gmail.com",
+    # "Phone ✱": "704-307-7983",
+    # # "Current location ✱": "New York, NY",
+    # "LinkedIn URL": "https://www.linkedin.com/in/arjun-s-gupta-193a178a/",
+    # "GitHub URL": "https://github.com/arjungup740",
+    # "Portfolio URL": "https://quantitativecuriosity.substack.com/s/projects",
+    # "Do you live in the NYC Area?✱": "Yes",  # Radio button
+    # "If not, are you willing to relocate?✱": "Yes",  # Radio button
+    # # "What are your pronouns?": "He/Him",
+    # 'Do you now or will you in the future require sponsorship for employment authorization to work in the US? (If so, Please let us know more information if you can.)✱': "No",
+    # # "What is your desired compensation for this role?": "$100,000",
+}
+
 
 for field_label, field_data in web_elem_dict_of_questions.items():
     if field_label in fields:  # fields is your dictionary of dummy data
@@ -130,13 +131,31 @@ for field_label, field_data in web_elem_dict_of_questions.items():
                         print(f"waiting for resume to upload, max time is {max_wait} seconds")
                         # Wait for "Success!" text in the resume-upload-label
                         WebDriverWait(driver, max_wait).until(
-                            lambda x: x.find_element(By.CSS_SELECTOR, '.resume-upload-label').text == "Success!"
+                            lambda x: x.find_element(By.CSS_SELECTOR, '.resume-upload-label').text.strip() == "Success!"
                         )
+                        success_element = driver.find_element(By.CSS_SELECTOR, '.resume-upload-label')
+                        print(f"Actual text: '{success_element.text}'")
                 elif input_type in ["text", "email", "tel", "url"]:
                     if isinstance(dummy_value, str):
                         input_elem.send_keys(dummy_value)
                 elif input_elem.tag_name == 'textarea':
                     input_elem.send_keys(dummy_value)
+                elif input_type == "text" and "location-input" in input_elem.get_attribute("class"):
+                    # Enter the location text
+                    input_elem.send_keys(dummy_value)
+                    time.sleep(1)  # Wait for dropdown to appear
+                    
+                    # Wait for and click the first dropdown result
+                    try:
+                        dropdown_results = WebDriverWait(driver, 5).until(
+                            EC.presence_of_element_located((By.CSS_SELECTOR, ".dropdown-results div"))
+                        )
+                        dropdown_results.click()
+                    except Exception as e:
+                        print(f"Could not select location from dropdown: {e}")
+                        # Clear and try again with just text if dropdown fails
+                        input_elem.clear()
+                        input_elem.send_keys(dummy_value)
                         
             # Add a small delay after scrolling and interacting
             time.sleep(random.uniform(0.5, 1))
@@ -155,7 +174,7 @@ for field_label, field_data in web_elem_dict_of_questions.items():
 
 # Define fields and dummy data
 
-time.sleep(5)
+# time.sleep(5)
 
 # Quit the browser
 # driver.quit()
