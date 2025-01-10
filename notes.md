@@ -5,8 +5,9 @@
 
 ## to do now
 
-get it to work hardcoded
 See about getting an actual submit to work
+    employ anti-bot protections -- it detects the issue on start up
+
 get it to work with a more gpt powered general approach
 try it on another application?
 
