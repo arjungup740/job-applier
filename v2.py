@@ -10,6 +10,9 @@ from bs4 import BeautifulSoup
 import time
 import random
 import os
+import json
+# from dotenv import load_dotenv
+# load_dotenv()
 from openai import OpenAI
 client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
 
@@ -104,7 +107,8 @@ def human_like_mouse_move(driver, element):
         print(f"Couldn't perform mouse movement, falling back to direct interaction")
 
 # Open the URL
-driver.get('https://jobs.lever.co/matchgroup/354cd021-8ea8-45e9-9dea-d1f6a5a0728f/apply')
+# driver.get('https://jobs.lever.co/matchgroup/354cd021-8ea8-45e9-9dea-d1f6a5a0728f/apply')
+driver.get('https://jobs.lever.co/arcadia/a245251f-5e8c-494f-a166-32bad5b4db2a/apply')
 
 # Wait for the page to load
 wait = WebDriverWait(driver, 10)
@@ -163,60 +167,151 @@ for question in application_questions:
         web_elem_dict_of_questions[application_label.text.strip()] = FormField(question)
 
 
-for key in web_elem_dict_of_questions.keys():
-    if not web_elem_dict_of_questions[key].is_filled():
-        print(f'-- question: {key}, type: {web_elem_dict_of_questions[key].get_input_types()}')
-        # print(web_elem_dict_of_questions[key].get_input_types())
-        # print(web_elem_dict_of_questions[key].get_field_container().get_attribute('outerHTML'))
-        # print('---' + '\n\n')
+# for key in web_elem_dict_of_questions.keys():
+#     if not web_elem_dict_of_questions[key].is_filled():
+#         print(f'-- question: {key}, type: {web_elem_dict_of_questions[key].get_input_types()}')
+        
+############################# sub-optim -- uploade resume for autofill first, check what's not filled in and fill in the rest
+for key, field_data in web_elem_dict_of_questions.items():
+    if 'resume' in key.lower():
+        print('resume found, checking input type and beginning upload')
+        input_elements = field_data.get_input_elements()
+        field_container = field_data.get_field_container()
+        if len(input_elements) == 1 and field_data.get_input_types()[0] == 'file':
+            file_path = os.path.abspath('Resume_AGupta_2024.pdf')
+            input_elements[0].send_keys(file_path)
+            print('resume uploaded, waiting for success button')
+            max_wait = 15
+            print(f"waiting for resume to upload, max time is {max_wait} seconds")
+            # Wait for "Success!" text in the resume-upload-label
+            WebDriverWait(driver, max_wait).until(
+                lambda x: x.find_element(By.CSS_SELECTOR, '.resume-upload-label').text.strip() == "Success!"
+            )
+            success_element = driver.find_element(By.CSS_SELECTOR, '.resume-upload-label')
+            print(f"Actual text: '{success_element.text}'")
+        else:
+            print('resume input element not found')
 
+### check the questions that are not filled in
 
+remaining_fields_dict = {key:field_data for key,field_data in web_elem_dict_of_questions.items() if not field_data.is_filled()}
 
-############################## Feed web elem dict of questions to gpt and ask it to generate an answer dict
+#### now ask AI to fill stuff in
 
-sample_dict = fields = {
-    'Resume/CV ✱': 'Resume.pdf',
-    "Full name✱": "Jimmy Holland",
-    "Email✱": "some_email@gmail.com",
-    "Phone ✱": "888-888-8888",
-    "LinkedIn URL": "https://www.linkedin.com/in/some-identifier/",
-    "GitHub URL": "https://github.com/some_username",
-    "Portfolio URL": "some link",
+sample_fields = {
+    'Resume/CV ✱': 'Resume_AGupta_2024.pdf',
+    "Full name✱": "Arjun Gupta",
+    "Email✱": "arjungup740@gmail.com",
+    "Phone ✱": "704-307-7983",
+    # # "Current location ✱": "New York, NY",
+    "LinkedIn URL": "https://www.linkedin.com/in/arjun-s-gupta-193a178a/",
+    "GitHub URL": "https://github.com/arjungup740",
+    "Portfolio URL": "https://quantitativecuriosity.substack.com/s/projects",
+    "Do you live in the NYC Area?✱": "Yes",  # Radio button
+    "If not, are you willing to relocate?✱": "Yes",  # Radio button
+    # # "What are your pronouns?": "He/Him",
+    'Do you now or will you in the future require sponsorship for employment authorization to work in the US? (If so, Please let us know more information if you can.)✱': "No",
+    # # "What is your desired compensation for this role?": "$100,000",
 }
 
 user_info = """
-ARJUN GUPTA
-704-307-7983 | arjungup740@gmail.com| https://github.com/arjungup740 | https://www.linkedin.com/in/arjun-s-gupta-193a178a/ | https://quantitativecuriosity.substack.com/s/projects
+located in New York, NY
 """
 
-questions_and_types_dict = {key: web_elem_dict_of_questions[key].get_input_types() for key in web_elem_dict_of_questions.keys()}
+questions_and_types_dict = {key:remaining_fields_dict[key].get_input_types() for key in remaining_fields_dict.keys()}
 
 messages = [
-				{"role": "system", "content": """You are a personal assistant helping to fill a web form job application. Given the dictionary of fields and the corresponding html, generate a dictionary of answers that a program can use to fill in the fields"""},
-				{"role": "system", "content": f"Here is an example of the dictionary you should produce: {sample_dict}"},
-                {"role": "system", "content": f"Do not answer any demographic questions"},
+				{"role": "system", "content": """You are a personal assistant helping to fill a web form job application. Given the dictionary of fields and the corresponding html, generate a json object of answers that a program can use to fill in the fields"""},
+				{"role": "system", "content": f"Here is an example of the dictionary you should produce: {sample_fields}"},
+                {"role": "system", "content": f"Do not answer any demographic questions -- don't even include them in the json"},
                 {"role": "system", "content": f"some info parsed from the user's resume: {user_info}"},
                 {"role": "user", "content": f"Here is the dictionary of fields and their input types: {questions_and_types_dict}"}
 			]
 	
-answer = client.chat.completions.create(
+completion = client.chat.completions.create(
     model="gpt-4o",
     messages=messages,
-    response_format='json_object'
+    response_format={"type": "json_object"}
 )
 
-print(completion.choices[0].message)
-############################# sub-optim -- uploade resume for autofill first, check what's not filled in and fill in the rest
-resume_field_exists = False
-for key in web_elem_dict_of_questions.keys():
-    if 'resume' in key.lower():
-        print('resume found')
-        resume_field_exists = True
-        break
+print(completion.choices[0].message.content)
 
-if resume_field_exists:
-    ## uploade resume for autofill
+fields = json.loads(completion.choices[0].message.content)
 
+print(fields)
+
+for field_label, field_data in remaining_fields_dict.items():
+    if field_label in fields:  # fields is your dictionary of dummy data
+        try:
+            dummy_value = fields[field_label]
+            input_elements = field_data.get_input_elements()
+            field_container = field_data.get_field_container()
+            if field_data.is_filled():
+                print(f"Skipping {field_label} because it is already filled")
+                continue
+            # Scroll the field container into view
+            driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", field_container)
+            
+            for input_elem in input_elements:
+                # Add human-like mouse movement
+                # human_like_mouse_move(driver, input_elem)
+                
+                input_type = input_elem.get_attribute('type')
+                
+                if input_type == "radio":
+                    if dummy_value in ["Yes", "No"] and input_elem.get_attribute("value") == dummy_value:
+                        input_elem.click()
+                elif input_type == "file":
+                    # Convert relative path to absolute path if needed
+                    file_path = os.path.abspath(dummy_value)
+                    input_elem.send_keys(file_path)
+                    if field_label == 'Resume/CV ✱':
+                        max_wait = 15
+                        print(f"waiting for resume to upload, max time is {max_wait} seconds")
+                        # Wait for "Success!" text in the resume-upload-label
+                        WebDriverWait(driver, max_wait).until(
+                            lambda x: x.find_element(By.CSS_SELECTOR, '.resume-upload-label').text.strip() == "Success!"
+                        )
+                        success_element = driver.find_element(By.CSS_SELECTOR, '.resume-upload-label')
+                        print(f"Actual text: '{success_element.text}'")
+                elif input_type in ["text", "email", "tel", "url"]:
+                    if isinstance(dummy_value, str):
+                        # Type like a human with random delays
+                        for char in dummy_value:
+                            input_elem.send_keys(char)
+                            time.sleep(random.uniform(0.05, 0.1))
+                elif input_elem.tag_name == 'textarea':
+                    input_elem.send_keys(dummy_value)
+                elif input_type == "text" and "location-input" in input_elem.get_attribute("class"):
+                    # Enter the location text
+                    input_elem.send_keys(dummy_value)
+                    time.sleep(1)  # Wait for dropdown to appear
+                    
+                    # Wait for and click the first dropdown result
+                    try:
+                        dropdown_results = WebDriverWait(driver, 5).until(
+                            EC.presence_of_element_located((By.CSS_SELECTOR, ".dropdown-results div"))
+                        )
+                        dropdown_results.click()
+                    except Exception as e:
+                        print(f"Could not select location from dropdown: {e}")
+                        # Clear and try again with just text if dropdown fails
+                        input_elem.clear()
+                        input_elem.send_keys(dummy_value)
+                        
+            # Add a small delay after scrolling and interacting
+            time.sleep(random.uniform(0.5, 1))
+            
+            # Check if field was successfully filled
+            if field_data.is_filled():
+                print(f"Successfully filled {field_label}")
+            else:
+                print(f"Failed to fill {field_label}")
+                
+            time.sleep(random.uniform(1, 3))
+            
+        except Exception as e:
+            print(f"Error processing field '{field_label}': {e}")
 
 input("Press Enter to close the browser...")
 driver.quit()

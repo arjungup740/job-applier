@@ -1,10 +1,10 @@
 
 
-## the lab
+## the lab -- see if can get the whole thing working off of GPT
 
-get a dict out
 upload resume first and see what's left to fill in to reduce token counts and increase accuracy
-give gpt access to the resume programmatically
+give gpt access to the resume programmatically -- figure out this assistant thing
+Try another application 
 
 
 ## to do now -- gpt approach
