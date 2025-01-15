@@ -23,59 +23,45 @@ import re
 client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
 
 # Initialize WebDriver with enhanced anti-detection options
-options = uc.ChromeOptions()
-options.add_argument('--no-sandbox')
-options.add_argument('--window-size=1920,1080')
-options.add_argument("--disable-gpu")
+def initialize_driver():
+    options = uc.ChromeOptions()
+    options.add_argument('--no-sandbox')
+    options.add_argument('--window-size=1920,1080')
+    options.add_argument("--disable-gpu")
 
-# Set a realistic user agent
-options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36")
+    # Set a realistic user agent
+    options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36")
 
+    # Add additional arguments to make automation less detectable
+    options.add_argument("--disable-blink-features=AutomationControlled")
+    options.add_argument("--disable-dev-shm-usage")
 
-# Add additional arguments to make automation less detectable
-options.add_argument("--disable-blink-features=AutomationControlled")
-options.add_argument("--disable-dev-shm-usage")
+    # If you still want the browser to stay open after the script finishes, 
+    # you can add this instead:
+    options.headless = False
 
-# If you still want the browser to stay open after the script finishes, 
-# you can add this instead:
-options.headless = False
+    # Add CDP commands to modify navigator.webdriver flag
+    driver = uc.Chrome(options=options)
+    driver.execute_cdp_cmd('Network.setUserAgentOverride', {"userAgent": 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36'})
+    driver.execute_cdp_cmd("Page.addScriptToEvaluateOnNewDocument", {
+        "source": """
+            Object.defineProperty(navigator, 'webdriver', {
+                get: () => undefined
+            })
+        """
+    })
 
-# Add CDP commands to modify navigator.webdriver flag
-driver = uc.Chrome(options=options)
-driver.execute_cdp_cmd('Network.setUserAgentOverride', {"userAgent": 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36'})
-driver.execute_cdp_cmd("Page.addScriptToEvaluateOnNewDocument", {
-    "source": """
-        Object.defineProperty(navigator, 'webdriver', {
-            get: () => undefined
-        })
-    """
-})
-
-# Add stealth settings
-stealth(driver,
-    languages=["en-US", "en"],
-    vendor="Google Inc.",
-    platform="Win32",
-    webgl_vendor="Intel Inc.",
-    renderer="Intel Iris OpenGL Engine",
-    fix_hairline=True,
-)
-
-
-# Open the URL
-# driver.get('https://jobs.lever.co/matchgroup/354cd021-8ea8-45e9-9dea-d1f6a5a0728f/apply')
-# driver.get('https://jobs.lever.co/arcadia/a245251f-5e8c-494f-a166-32bad5b4db2a/apply')
-# driver.get('https://jobs.lever.co/RaptorMaps/cffe260a-c96d-4d18-82f9-9252fa1ab4a9/apply')
-driver.get('https://jobs.lever.co/spotify/df8c49b0-4509-453a-8919-9314b61bede2/apply')
-
-# Wait for the page to load
-wait = WebDriverWait(driver, 10)
-
-# Wait for the form to be present in the DOM
-application_form = wait.until(EC.presence_of_element_located((By.ID, "application-form")))
-
-# Extract all application questions
-application_questions = application_form.find_elements(By.CSS_SELECTOR, "[class*='application-question']")
+    # Add stealth settings
+    stealth(driver,
+        languages=["en-US", "en"],
+        vendor="Google Inc.",
+        platform="Win32",
+        webgl_vendor="Intel Inc.",
+        renderer="Intel Iris OpenGL Engine",
+        fix_hairline=True,
+    )
+    
+    return driver
 
 class FormField:
     def __init__(self, question_element):
@@ -116,108 +102,98 @@ class FormField:
                         return True
         return False
 
-web_elem_dict_of_questions = {}
-for question in application_questions:
-    question_html = question.get_attribute('outerHTML')
-    soup = BeautifulSoup(question_html, 'html.parser')
-    application_label = soup.find('div', class_=lambda x: x and 'application-label' in x)
-    if application_label:
-        web_elem_dict_of_questions[application_label.text.strip()] = FormField(question)
 
-        
-############################# sub-optim -- uploade resume for autofill first, check what's not filled in and fill in the rest
-for key, field_data in web_elem_dict_of_questions.items():
-    if 'resume' in key.lower():
-        print('resume found, checking input type and beginning upload')
-        input_elements = field_data.get_input_elements()
-        field_container = field_data.get_field_container()
-        if len(input_elements) == 1 and field_data.get_input_types()[0] == 'file':
-            file_path = os.path.abspath('Resume_AGupta_2024.pdf')
-            input_elements[0].send_keys(file_path)
-            print('resume uploaded, waiting for success button')
-            max_wait = 15
-            print(f"waiting for resume to upload, max time is {max_wait} seconds")
-            time.sleep(max_wait)
-            # Wait for "Success!" text in the resume-upload-label
-            # WebDriverWait(driver, max_wait).until(
-            #     lambda x: x.find_element(By.CSS_SELECTOR, '.resume-upload-label').text.strip() == "Success!"
-            # )
-            # success_element = driver.find_element(By.CSS_SELECTOR, '.resume-upload-label')
-            # print(f"Actual text: '{success_element.text}'")
+def get_application_questions(driver):
+
+    # Wait for the page to load
+    wait = WebDriverWait(driver, 10)
+
+    # Wait for the form to be present in the DOM
+    application_form = wait.until(EC.presence_of_element_located((By.ID, "application-form")))
+
+    # Extract all application questions
+    application_questions = application_form.find_elements(By.CSS_SELECTOR, "[class*='application-question']")
+
+    web_elem_dict_of_questions = {}
+    for question in application_questions:
+        question_html = question.get_attribute('outerHTML')
+        soup = BeautifulSoup(question_html, 'html.parser')
+        application_label = soup.find('div', class_=lambda x: x and 'application-label' in x)
+        if application_label:
+            web_elem_dict_of_questions[application_label.text.strip()] = FormField(question)
+
+    return web_elem_dict_of_questions
+
+def upload_resume(driver, web_elem_dict_of_questions):
+    for key, field_data in web_elem_dict_of_questions.items():
+        if 'resume' in key.lower():
+            print('resume found, checking input type and beginning upload')
+            input_elements = field_data.get_input_elements()
+            field_container = field_data.get_field_container()
+            if len(input_elements) == 1 and field_data.get_input_types()[0] == 'file':
+                file_path = os.path.abspath('Resume_AGupta_2024.pdf')
+                input_elements[0].send_keys(file_path)
+                print('resume uploaded, waiting for success button')
+                max_wait = 15
+                print(f"waiting for resume to upload, max time is {max_wait} seconds")
+                time.sleep(max_wait)
+                # Wait for "Success!" text in the resume-upload-label
+                # WebDriverWait(driver, max_wait).until(
+                #     lambda x: x.find_element(By.CSS_SELECTOR, '.resume-upload-label').text.strip() == "Success!"
+                # )
+                # success_element = driver.find_element(By.CSS_SELECTOR, '.resume-upload-label')
+                # print(f"Actual text: '{success_element.text}'")
         else:
             print('resume input element not found')
 
-### check the questions that are not filled in
+def create_and_run_assistant(filename, prompt):
+    client = OpenAI(api_key=os.environ.get("MY_OPENAI_KEY"))
 
-remaining_fields_dict = {key:field_data for key,field_data in web_elem_dict_of_questions.items() if not field_data.is_filled()}
+    pdf_assistant = client.beta.assistants.create(
+        model="gpt-4o",
+        description="An assistant to use info from a resume to fill in the fields of a job application.",
+        tools=[{"type": "file_search"}],
+        name="PDF assistant",
+    )
+
+    # Create thread
+    thread = client.beta.threads.create()
+
+    file = client.files.create(file=open(filename, "rb"), purpose="assistants")
+
+    # Create assistant
+    client.beta.threads.messages.create(
+        thread_id=thread.id,
+        role="user",
+        attachments=[
+            Attachment(
+                file_id=file.id, tools=[AttachmentToolFileSearch(type="file_search")]
+            )
+        ],
+        content=prompt,
+    )
+
+    # Run thread
+    run = client.beta.threads.runs.create_and_poll(
+        thread_id=thread.id, assistant_id=pdf_assistant.id, timeout=1000
+    )
+
+    if run.status != "completed":
+        raise Exception("Run failed:", run.status)
+    
+    return thread, run
+
+
+############################# sub-optim -- uploade resume for autofill first, check what's not filled in and fill in the rest
+
+
 
 #### now ask AI to fill stuff in
 
-filename = "Resume_AGupta_2024.pdf"
-# prompt = "Extract the content from the file provided without altering it. Just output its exact content and nothing else."
-
-sample_fields = {
-    'Resume/CV ✱': 'Resume_AGupta_2024.pdf',
-    "Full name✱": "Arjun Gupta",
-    "Email✱": "arjungup740@gmail.com",
-    "Phone ✱": "704-307-7983",
-    # # "Current location ✱": "New York, NY",
-    "LinkedIn URL": "https://www.linkedin.com/in/arjun-s-gupta-193a178a/",
-    "GitHub URL": "https://github.com/arjungup740",
-    "Portfolio URL": "https://quantitativecuriosity.substack.com/s/projects",
-    "Do you live in the NYC Area?✱": "Yes",  # Radio button
-    "If not, are you willing to relocate?✱": "Yes",  # Radio button
-    # # "What are your pronouns?": "He/Him",
-    'Do you now or will you in the future require sponsorship for employment authorization to work in the US? (If so, Please let us know more information if you can.)✱': "No",
-    # # "What is your desired compensation for this role?": "$100,000",
-}
-
-user_info = """
-located in New York, NY
-"""
-
-questions_and_types_dict = {key:remaining_fields_dict[key].get_input_types() for key in remaining_fields_dict.keys()}
-
-prompt = f"""You are a personal assistant helping to fill a web form job application. Given the dictionary of fields and the corresponding html, use the information in the resume to generate a json object of answers that a program can use to fill in the fields
-                Here is an example of the dictionary you should produce: {sample_fields}. Here is some additional information about the user: {user_info}
-                Do not answer any demographic questions -- don't even include them in the json
-                Here is the dictionary of fields and their input types: {questions_and_types_dict}. Only produce json for the fields that are in this dictionary, though you may use the example dictionary to help you with information if needed -- it has real data
-                """
 
 
-client = OpenAI(api_key=os.environ.get("MY_OPENAI_KEY"))
 
-pdf_assistant = client.beta.assistants.create(
-    model="gpt-4o",
-    description="An assistant to extract the contents of PDF files.",
-    tools=[{"type": "file_search"}],
-    name="PDF assistant",
-)
 
-# Create thread
-thread = client.beta.threads.create()
-
-file = client.files.create(file=open(filename, "rb"), purpose="assistants")
-
-# Create assistant
-client.beta.threads.messages.create(
-    thread_id=thread.id,
-    role="user",
-    attachments=[
-        Attachment(
-            file_id=file.id, tools=[AttachmentToolFileSearch(type="file_search")]
-        )
-    ],
-    content=prompt,
-)
-
-# Run thread
-run = client.beta.threads.runs.create_and_poll(
-    thread_id=thread.id, assistant_id=pdf_assistant.id, timeout=1000
-)
-
-if run.status != "completed":
-    raise Exception("Run failed:", run.status)
 
 messages_cursor = client.beta.threads.messages.list(thread_id=thread.id)
 messages = [message for message in messages_cursor]
@@ -356,3 +332,46 @@ for field_label, field_data in remaining_fields_dict.items():
 
 input("Press Enter to close the browser...")
 # driver.quit()
+
+########################### runner
+
+#### create driver, nav to page
+driver = initialize_driver()
+driver.get('https://jobs.lever.co/spotify/df8c49b0-4509-453a-8919-9314b61bede2/apply')
+#### get questions
+web_elem_dict_of_questions = get_application_questions(driver)
+#### upload resume
+upload_resume(driver, web_elem_dict_of_questions)
+#### fill in remaining fields resume didn't cover with AI
+
+
+remaining_fields_dict = {key:field_data for key,field_data in web_elem_dict_of_questions.items() if not field_data.is_filled()}
+questions_and_types_dict = {key:remaining_fields_dict[key].get_input_types() for key in remaining_fields_dict.keys()}
+
+filename = "Resume_AGupta_2024.pdf"
+
+sample_fields = {
+    'Resume/CV ✱': 'Resume_AGupta_2024.pdf',
+    "Full name✱": "Arjun Gupta",
+    "Email✱": "arjungup740@gmail.com",
+    "Phone ✱": "704-307-7983",
+    "Current location ✱": "New York, NY",
+    "LinkedIn URL": "https://www.linkedin.com/in/arjun-s-gupta-193a178a/",
+    "GitHub URL": "https://github.com/arjungup740",
+    "Portfolio URL": "https://quantitativecuriosity.substack.com/s/projects",
+    "Do you live in the NYC Area?✱": "Yes", 
+    "If not, are you willing to relocate?✱": "Yes",  
+    'Do you now or will you in the future require sponsorship for employment authorization to work in the US? (If so, Please let us know more information if you can.)✱': "No",
+}
+
+
+prompt = f"""You are a personal assistant helping to fill a web form job application. Given the dictionary of fields and the corresponding html, use the information in the resume to generate a json object of answers that a program can use to fill in the fields
+                Here is an example of the dictionary you should produce: {sample_fields}. Here is some additional information about the user: {user_info}
+                Do not answer any demographic questions -- don't even include them in the json
+                Here is the dictionary of fields and their input types: {questions_and_types_dict}. Only produce json for the fields that are in this dictionary, though you may use the example dictionary to help you with information if needed -- it has real data
+                """
+
+thread, run = create_and_run_assistant(filename, prompt)
+
+input("Press Enter to close the browser...")
+driver.quit()

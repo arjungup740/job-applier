@@ -1,21 +1,25 @@
 
 
-## the lab -- see if can get the whole thing working off of GPT
+##### the lab -- see if can get the whole thing working off of GPT
 
-* feed it a list of jobs
-* have it create multiple windows/fill multiple applications at once
-* have some general clean ups for usability
-* have another llm call go through and check the answers fill in -- for example, occasionally misses locations as well as portfolio site
-* try to get something that can do ashby, greenhouse jobs
-
+steps
+* create driver
+* grab questions
+* if resume in those questions, upload it
+* take remaining fields, get AI to fill them in
+* have a second AI check the answers and fill in any missing fields
+* fill in the fields
 
 ## to do now 
 
-* come up with some next avenues
-
+* make it take a list of jobs, in order to do this it has to have multiple processes/not kill the windows
 
 ## couple of avenues:
 
+* able to feed it a list of jobs
+* have it create multiple windows/fill multiple applications at once
+* have some general clean ups for usability
+* try to get something that can do ashby, greenhouse jobs
 
 ## reference
 
