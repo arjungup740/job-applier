@@ -17,7 +17,7 @@ sample_fields = {
 }
 
 user_info = """
-located in New York, NY
+Arjun Gupta is located in New York, NY. He does not require sponsorship for employment authorization to work in the US. His portfolio is https://quantitativecuriosity.substack.com/s/projects
 """
 
 questions_and_types_dict = {key:remaining_fields_dict[key].get_input_types() for key in remaining_fields_dict.keys()}

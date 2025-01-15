@@ -2,39 +2,20 @@
 
 ## the lab -- see if can get the whole thing working off of GPT
 
-
-give gpt access to the resume programmatically -- figure out this assistant thing
-
-
-## to do now -- gpt approach
-
-it works hardcoded. Now make it work generically
-	step 1: get the question blob and ask gpt to generate the answer dict
-		give it information about yourself, and give it the questions, tell it to fill in the answer dict
-	step 2: take the answer dict and fill in the fields
-
-Feed the question blob and ask gpt to generate the answer dict
-    ignore any demographic questions (pronouns, race, ethnicity, gender, sexual orientation, etc.)
-
-    have it upload the resume first
-    see what is lef to fill in
-    given the attached info about a user, take this html blob of remaining questions and generate a dict of answers that a program can use to fill in the fields 
-    
-        
+* feed it a list of jobs
+* have it create multiple windows/fill multiple applications at once
+* have some general clean ups for usability
+* have another llm call go through and check the answers fill in -- for example, occasionally misses locations as well as portfolio site
+* try to get something that can do ashby, greenhouse jobs
 
 
+## to do now 
 
-try it on another application?
-
-logic that doesn't fill in non-required questions -- certainly not demographic ones, only things that help the profile
-
-
-
+* come up with some next avenues
 
 
 ## couple of avenues:
 
-ultimately could grab the question elements and html, pass to llm to parse the questions and generate an answer dict, then pass that answer dict to the program that goes and fills in the fields
 
 ## reference
 
@@ -43,6 +24,7 @@ https://jobs.lever.co/matchgroup/354cd021-8ea8-45e9-9dea-d1f6a5a0728f/apply # le
 https://jobs.ashbyhq.com/evenup/bbc7d342-1a7f-4940-bd66-ae5c710e65ae/application # ashby job
 
 #### Done
+give gpt access to the resume programmatically -- figure out this assistant thing
 Try another application 
 upload resume first and see what's left to fill in to reduce token counts and increase accuracy
 See about getting an actual submit to work -- slow and heavy, but it does work
