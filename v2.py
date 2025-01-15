@@ -14,6 +14,12 @@ import json
 # from dotenv import load_dotenv
 # load_dotenv()
 from openai import OpenAI
+from openai.types.beta.threads.message_create_params import (
+    Attachment,
+    AttachmentToolFileSearch,
+)
+import re
+
 client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
 
 # Initialize WebDriver with enhanced anti-detection options
@@ -61,51 +67,6 @@ stealth(driver,
 )
 
 # Add this function for human-like mouse movements
-def human_like_mouse_move(driver, element):
-    action = ActionChains(driver)
-    
-    # Get element location and viewport size
-    viewport_width = driver.execute_script("return window.innerWidth;")
-    viewport_height = driver.execute_script("return window.innerHeight;")
-    
-    # Get element location after scrolling it into view
-    driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", element)
-    time.sleep(0.5)  # Give time for scrolling to complete
-    
-    location = element.location
-    size = element.size
-    
-    # Calculate a random point within the element
-    target_x = location['x'] + size['width'] // 2
-    target_y = location['y'] + size['height'] // 2
-    
-    # Create multiple points for natural curve movement
-    # But ensure they stay within viewport bounds
-    points = []
-    for _ in range(random.randint(2, 4)):
-        # Limit the random offsets to stay within viewport
-        x_offset = random.randint(-50, 50)
-        y_offset = random.randint(-50, 50)
-        
-        new_x = min(max(target_x + x_offset, 0), viewport_width)
-        new_y = min(max(target_y + y_offset, 0), viewport_height)
-        
-        points.append((new_x, new_y))
-    
-    # Move through points with random delays
-    for point in points:
-        action.move_by_offset(point[0], point[1])
-        action.pause(random.uniform(0.1, 0.2))
-    
-    # Finally move to the element
-    action.move_to_element(element)
-    action.pause(random.uniform(0.1, 0.2))
-    
-    try:
-        action.perform()
-    except Exception as e:
-        print(f"Couldn't perform mouse movement, falling back to direct interaction")
-
 # Open the URL
 # driver.get('https://jobs.lever.co/matchgroup/354cd021-8ea8-45e9-9dea-d1f6a5a0728f/apply')
 driver.get('https://jobs.lever.co/arcadia/a245251f-5e8c-494f-a166-32bad5b4db2a/apply')
@@ -179,12 +140,13 @@ for key, field_data in web_elem_dict_of_questions.items():
             print('resume uploaded, waiting for success button')
             max_wait = 15
             print(f"waiting for resume to upload, max time is {max_wait} seconds")
+            time.sleep(max_wait)
             # Wait for "Success!" text in the resume-upload-label
-            WebDriverWait(driver, max_wait).until(
-                lambda x: x.find_element(By.CSS_SELECTOR, '.resume-upload-label').text.strip() == "Success!"
-            )
-            success_element = driver.find_element(By.CSS_SELECTOR, '.resume-upload-label')
-            print(f"Actual text: '{success_element.text}'")
+            # WebDriverWait(driver, max_wait).until(
+            #     lambda x: x.find_element(By.CSS_SELECTOR, '.resume-upload-label').text.strip() == "Success!"
+            # )
+            # success_element = driver.find_element(By.CSS_SELECTOR, '.resume-upload-label')
+            # print(f"Actual text: '{success_element.text}'")
         else:
             print('resume input element not found')
 
@@ -193,6 +155,9 @@ for key, field_data in web_elem_dict_of_questions.items():
 remaining_fields_dict = {key:field_data for key,field_data in web_elem_dict_of_questions.items() if not field_data.is_filled()}
 
 #### now ask AI to fill stuff in
+
+filename = "Resume_AGupta_2024.pdf"
+# prompt = "Extract the content from the file provided without altering it. Just output its exact content and nothing else."
 
 sample_fields = {
     'Resume/CV ✱': 'Resume_AGupta_2024.pdf',
@@ -216,30 +181,88 @@ located in New York, NY
 
 questions_and_types_dict = {key:remaining_fields_dict[key].get_input_types() for key in remaining_fields_dict.keys()}
 
-messages = [
-				{"role": "system", "content": """You are a personal assistant helping to fill a web form job application. Given the dictionary of fields and the corresponding html, generate a json object of answers that a program can use to fill in the fields"""},
-				{"role": "system", "content": f"Here is an example of the dictionary you should produce: {sample_fields}"},
-                {"role": "system", "content": f"Do not answer any demographic questions -- don't even include them in the json"},
-                {"role": "system", "content": f"some info parsed from the user's resume: {user_info}"},
-                {"role": "user", "content": f"Here is the dictionary of fields and their input types: {questions_and_types_dict}"}
-			]
-	
-completion = client.chat.completions.create(
+prompt = f"""You are a personal assistant helping to fill a web form job application. Given the dictionary of fields and the corresponding html, use the information in the resume to generate a json object of answers that a program can use to fill in the fields
+                Here is an example of the dictionary you should produce: {sample_fields}. Here is some additional information about the user: {user_info}
+                Do not answer any demographic questions -- don't even include them in the json
+                Here is the dictionary of fields and their input types: {questions_and_types_dict}. Only produce json for the fields that are in this dictionary, though you may use the example dictionary to help you with information if needed -- it has real data
+                """
+
+
+client = OpenAI(api_key=os.environ.get("MY_OPENAI_KEY"))
+
+pdf_assistant = client.beta.assistants.create(
     model="gpt-4o",
-    messages=messages,
-    response_format={"type": "json_object"}
+    description="An assistant to extract the contents of PDF files.",
+    tools=[{"type": "file_search"}],
+    name="PDF assistant",
 )
 
-print(completion.choices[0].message.content)
+# Create thread
+thread = client.beta.threads.create()
 
-fields = json.loads(completion.choices[0].message.content)
+file = client.files.create(file=open(filename, "rb"), purpose="assistants")
 
-print(fields)
+# Create assistant
+client.beta.threads.messages.create(
+    thread_id=thread.id,
+    role="user",
+    attachments=[
+        Attachment(
+            file_id=file.id, tools=[AttachmentToolFileSearch(type="file_search")]
+        )
+    ],
+    content=prompt,
+)
+
+# Run thread
+run = client.beta.threads.runs.create_and_poll(
+    thread_id=thread.id, assistant_id=pdf_assistant.id, timeout=1000
+)
+
+if run.status != "completed":
+    raise Exception("Run failed:", run.status)
+
+messages_cursor = client.beta.threads.messages.list(thread_id=thread.id)
+messages = [message for message in messages_cursor]
+
+# Output text
+res_txt = messages[0].content[0].text.value
+# print(res_txt)
+
+def extract_json(text):
+    """
+    Extracts the JSON object from a text containing commentary and JSON content.
+
+    Parameters:
+        text (str): The input text containing commentary and a JSON object.
+
+    Returns:
+        dict: The extracted JSON object as a Python dictionary.
+    """
+    # Use regex to match a JSON-like structure
+    json_match = re.search(r"\{.*?\}", text, re.DOTALL)
+    
+    if json_match:
+        json_string = json_match.group()
+        try:
+            # Parse the JSON string into a dictionary
+            return json.loads(json_string)
+        except json.JSONDecodeError as e:
+            print("Error decoding JSON:", e)
+            return None
+    else:
+        print("No JSON object found in the text.")
+        return None
+
+parsed_json = extract_json(res_txt)
+assert parsed_json is not None
+
+final_fields = parsed_json
 
 for field_label, field_data in remaining_fields_dict.items():
-    if field_label in fields:  # fields is your dictionary of dummy data
+    if field_label in final_fields:  # fields is your dictionary of dummy data
         try:
-            dummy_value = fields[field_label]
+            dummy_value = final_fields[field_label]
             input_elements = field_data.get_input_elements()
             field_container = field_data.get_field_container()
             if field_data.is_filled():

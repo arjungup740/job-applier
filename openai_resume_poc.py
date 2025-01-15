@@ -6,7 +6,7 @@ from openai.types.beta.threads.message_create_params import (
 import os
 
 filename = "Resume_AGupta_2024.pdf"
-prompt = "Extract the content from the file provided without altering it. Just output its exact content and nothing else."
+# prompt = "Extract the content from the file provided without altering it. Just output its exact content and nothing else."
 
 sample_fields = {
     'Resume/CV ✱': 'Resume_AGupta_2024.pdf',
@@ -31,7 +31,7 @@ located in New York, NY
 questions_and_types_dict = {key:remaining_fields_dict[key].get_input_types() for key in remaining_fields_dict.keys()}
 
 prompt = f"""You are a personal assistant helping to fill a web form job application. Given the dictionary of fields and the corresponding html, use the information in the resume to generate a json object of answers that a program can use to fill in the fields
-                Here is an example of the dictionary you should produce: {sample_fields}
+                Here is an example of the dictionary you should produce: {sample_fields}. Here is some additional information about the user: {user_info}
                 Do not answer any demographic questions -- don't even include them in the json
                 Here is the dictionary of fields and their input types: {questions_and_types_dict}. Only produce json for the fields that are in this dictionary, though you may use the example dictionary to help you with information if needed.
                 """
@@ -75,5 +75,39 @@ messages_cursor = client.beta.threads.messages.list(thread_id=thread.id)
 messages = [message for message in messages_cursor]
 
 # Output text
-res_txt = messages[1].content[0].text.value
+res_txt = messages[0].content[0].text.value
 print(res_txt)
+
+import json
+import re
+
+def extract_json(text):
+    """
+    Extracts the JSON object from a text containing commentary and JSON content.
+
+    Parameters:
+        text (str): The input text containing commentary and a JSON object.
+
+    Returns:
+        dict: The extracted JSON object as a Python dictionary.
+    """
+    # Use regex to match a JSON-like structure
+    json_match = re.search(r"\{.*?\}", text, re.DOTALL)
+    
+    if json_match:
+        json_string = json_match.group()
+        try:
+            # Parse the JSON string into a dictionary
+            return json.loads(json_string)
+        except json.JSONDecodeError as e:
+            print("Error decoding JSON:", e)
+            return None
+    else:
+        print("No JSON object found in the text.")
+        return None
+
+
+# Extract and print the JSON object as a dictionary
+parsed_json = extract_json(res_txt)
+if parsed_json:
+    print("Extracted JSON:", parsed_json)

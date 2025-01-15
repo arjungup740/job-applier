@@ -1,3 +1,99 @@
+#### this got the main fields more correctly
+
+sample_fields = {
+    'Resume/CV ✱': 'Resume_AGupta_2024.pdf',
+    "Full name✱": "Arjun Gupta",
+    "Email✱": "arjungup740@gmail.com",
+    "Phone ✱": "704-307-7983",
+    # # "Current location ✱": "New York, NY",
+    "LinkedIn URL": "https://www.linkedin.com/in/arjun-s-gupta-193a178a/",
+    "GitHub URL": "https://github.com/arjungup740",
+    "Portfolio URL": "https://quantitativecuriosity.substack.com/s/projects",
+    "Do you live in the NYC Area?✱": "Yes",  # Radio button
+    "If not, are you willing to relocate?✱": "Yes",  # Radio button
+    # # "What are your pronouns?": "He/Him",
+    'Do you now or will you in the future require sponsorship for employment authorization to work in the US? (If so, Please let us know more information if you can.)✱': "No",
+    # # "What is your desired compensation for this role?": "$100,000",
+}
+
+user_info = """
+located in New York, NY
+"""
+
+questions_and_types_dict = {key:remaining_fields_dict[key].get_input_types() for key in remaining_fields_dict.keys()}
+
+messages = [
+				{"role": "system", "content": """You are a personal assistant helping to fill a web form job application. Given the dictionary of fields and the corresponding html, generate a json object of answers that a program can use to fill in the fields"""},
+				{"role": "system", "content": f"Here is an example of the dictionary you should produce: {sample_fields}"},
+                {"role": "system", "content": f"Do not answer any demographic questions -- don't even include them in the json"},
+                {"role": "system", "content": f"some info parsed from the user's resume: {user_info}"},
+                {"role": "user", "content": f"Here is the dictionary of fields and their input types: {questions_and_types_dict}"}
+			]
+	
+completion = client.chat.completions.create(
+    model="gpt-4o",
+    messages=messages,
+    response_format={"type": "json_object"}
+)
+
+print(completion.choices[0].message.content)
+
+fields = json.loads(completion.choices[0].message.content)
+
+print(fields)
+
+##### imitate human mouse movement
+def human_like_mouse_move(driver, element):
+    action = ActionChains(driver)
+    
+    # Get element location and viewport size
+    viewport_width = driver.execute_script("return window.innerWidth;")
+    viewport_height = driver.execute_script("return window.innerHeight;")
+    
+    # Get element location after scrolling it into view
+    driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", element)
+    time.sleep(0.5)  # Give time for scrolling to complete
+    
+    location = element.location
+    size = element.size
+    
+    # Calculate a random point within the element
+    target_x = location['x'] + size['width'] // 2
+    target_y = location['y'] + size['height'] // 2
+    
+    # Create multiple points for natural curve movement
+    # But ensure they stay within viewport bounds
+    points = []
+    for _ in range(random.randint(2, 4)):
+        # Limit the random offsets to stay within viewport
+        x_offset = random.randint(-50, 50)
+        y_offset = random.randint(-50, 50)
+        
+        new_x = min(max(target_x + x_offset, 0), viewport_width)
+        new_y = min(max(target_y + y_offset, 0), viewport_height)
+        
+        points.append((new_x, new_y))
+    
+    # Move through points with random delays
+    for point in points:
+        action.move_by_offset(point[0], point[1])
+        action.pause(random.uniform(0.1, 0.2))
+    
+    # Finally move to the element
+    action.move_to_element(element)
+    action.pause(random.uniform(0.1, 0.2))
+    
+    try:
+        action.perform()
+    except Exception as e:
+        print(f"Couldn't perform mouse movement, falling back to direct interaction")
+
+
+
+
+#### this got the main fields more correctly
+
+
 htmldict_of_questions = {}
 for question in application_questions:
     question_html = question.get_attribute('outerHTML')
