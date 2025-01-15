@@ -166,10 +166,6 @@ for question in application_questions:
     if application_label:
         web_elem_dict_of_questions[application_label.text.strip()] = FormField(question)
 
-
-# for key in web_elem_dict_of_questions.keys():
-#     if not web_elem_dict_of_questions[key].is_filled():
-#         print(f'-- question: {key}, type: {web_elem_dict_of_questions[key].get_input_types()}')
         
 ############################# sub-optim -- uploade resume for autofill first, check what's not filled in and fill in the rest
 for key, field_data in web_elem_dict_of_questions.items():
@@ -314,4 +310,4 @@ for field_label, field_data in remaining_fields_dict.items():
             print(f"Error processing field '{field_label}': {e}")
 
 input("Press Enter to close the browser...")
-driver.quit()
+# driver.quit()

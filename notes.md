@@ -2,9 +2,8 @@
 
 ## the lab -- see if can get the whole thing working off of GPT
 
-upload resume first and see what's left to fill in to reduce token counts and increase accuracy
+
 give gpt access to the resume programmatically -- figure out this assistant thing
-Try another application 
 
 
 ## to do now -- gpt approach
@@ -44,6 +43,8 @@ https://jobs.lever.co/matchgroup/354cd021-8ea8-45e9-9dea-d1f6a5a0728f/apply # le
 https://jobs.ashbyhq.com/evenup/bbc7d342-1a7f-4940-bd66-ae5c710e65ae/application # ashby job
 
 #### Done
+Try another application 
+upload resume first and see what's left to fill in to reduce token counts and increase accuracy
 See about getting an actual submit to work -- slow and heavy, but it does work
     employ anti-bot protections -- it detects the issue on start up
 make it so that it doesn't kill the window after it finishes filling in
