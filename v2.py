@@ -69,7 +69,8 @@ stealth(driver,
 # Add this function for human-like mouse movements
 # Open the URL
 # driver.get('https://jobs.lever.co/matchgroup/354cd021-8ea8-45e9-9dea-d1f6a5a0728f/apply')
-driver.get('https://jobs.lever.co/arcadia/a245251f-5e8c-494f-a166-32bad5b4db2a/apply')
+# driver.get('https://jobs.lever.co/arcadia/a245251f-5e8c-494f-a166-32bad5b4db2a/apply')
+driver.get('https://jobs.lever.co/RaptorMaps/cffe260a-c96d-4d18-82f9-9252fa1ab4a9/apply')
 
 # Wait for the page to load
 wait = WebDriverWait(driver, 10)
