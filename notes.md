@@ -2,17 +2,11 @@
 
 ##### the lab -- see if can get the whole thing working off of GPT
 
-steps
-* create driver
-* grab questions
-* if resume in those questions, upload it
-* take remaining fields, get AI to fill them in
-* have a second AI check the answers and fill in any missing fields
-* fill in the fields
 
-## to do now 
+## to do now -- make it take a list of jobs, in order to do this it has to have multiple processes/not kill the windows
 
-* make it take a list of jobs, in order to do this it has to have multiple processes/not kill the windows
+
+* ask gpt how to run the function, then spin up another window that repeats the process
 
 ## couple of avenues:
 
@@ -28,6 +22,7 @@ https://jobs.lever.co/matchgroup/354cd021-8ea8-45e9-9dea-d1f6a5a0728f/apply # le
 https://jobs.ashbyhq.com/evenup/bbc7d342-1a7f-4940-bd66-ae5c710e65ae/application # ashby job
 
 #### Done
+do this quick debug
 give gpt access to the resume programmatically -- figure out this assistant thing
 Try another application 
 upload resume first and see what's left to fill in to reduce token counts and increase accuracy
@@ -46,6 +41,6 @@ go through and grab all the application question classes
 there's conceptual and there's mechanics
 
 #### Return
-
+figure out whyit's missing "current location" on the spotify -- it's showing as filled, which is a bit weird. Come back later, or a more flexible approach later
 see if can handle location dropdowns -- triggers the catpcha, try again later
 checkboxes - in general this might be useful, but punt for now

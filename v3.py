@@ -347,6 +347,7 @@ sample_fields = {
 prompt = f"""You are a personal assistant helping to fill a web form job application. Given the dictionary of fields and the corresponding html, use the information in the resume to generate a json object of answers that a program can use to fill in the fields
                 Here is an example of the dictionary you should produce: {sample_fields}.
                 Do not answer any demographic questions -- don't even include them in the json
+                Any comments you make should be OUTSIDE of the json object, not within it
                 Here is the dictionary of fields and their input types: {questions_and_types_dict}. Only produce json for the fields that are in this dictionary, though you may use the example dictionary to help you with information if needed -- it has real data
                 """
 
