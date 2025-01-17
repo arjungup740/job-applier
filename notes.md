@@ -3,17 +3,17 @@
 ##### the lab -- see if can get the whole thing working off of GPT
 
 
-## to do now -- make it take a list of jobs, in order to do this it has to have multiple processes/not kill the windows
+## to do now -- 
 
-
-* ask gpt how to run the function, then spin up another window that repeats the process
+* get on github
+* fill in requirements.txt
 
 ## couple of avenues:
 
-* able to feed it a list of jobs
-* have it create multiple windows/fill multiple applications at once
-* have some general clean ups for usability
 * try to get something that can do ashby, greenhouse jobs
+* intelligentaly pull a list of lever jobs
+* figure out how to follow up on the applications you've sent
+* reach outs 
 
 ## reference
 
@@ -22,6 +22,7 @@ https://jobs.lever.co/matchgroup/354cd021-8ea8-45e9-9dea-d1f6a5a0728f/apply # le
 https://jobs.ashbyhq.com/evenup/bbc7d342-1a7f-4940-bd66-ae5c710e65ae/application # ashby job
 
 #### Done
+make it take a list of jobs, in order to do this it has to have multiple processes/not kill the windows
 do this quick debug
 give gpt access to the resume programmatically -- figure out this assistant thing
 Try another application 
